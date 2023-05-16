@@ -29,7 +29,7 @@ class Led:
             raise TypeError('pin must be an integer')
         if not isinstance(board, Arduino):
             raise TypeError('board must be an Arduino object')
-        
+
         self.board = board
         self.pin = self.board.get_pin('d:' + str(pin) + ':o')
         self.state = 0
@@ -85,6 +85,8 @@ class Game:
         computer_move: A boolean that represents whether the computer is making a move or not
         computer_move_start_time: The time when the computer started making a move
         computer_move_delay: The delay between the computer moves
+        can_get_input: A boolean that represents whether the game can get input or not
+        can_start_again: A boolean that represents whether the game can start again or not
         '''
         if not isinstance(leds, list):
             raise TypeError('leds must be a list')
@@ -92,7 +94,7 @@ class Game:
             raise TypeError('chances must be an integer')
         if not isinstance(leds[0], Led):
             raise TypeError('leds must be a list of Led objects')
-        
+
         self.leds = leds
         self.chances = chances
         self.started = False
@@ -106,6 +108,8 @@ class Game:
         self.computer_move = False
         self.computer_move_start_time = 0
         self.computer_move_delay = 3
+        self.can_get_input = False
+        self.can_start_again = False
 
     def color_text(self, text, fg_color='white', bg_color='black'):
         '''Returns the text with the specified foreground and background color'''
@@ -195,10 +199,10 @@ class Game:
         else:
             print(self.color_text('Game Mode: {}'.format(self.color_text(
                 " Human vs Human ", 'white', 'dark red')), 'blue', 'black'))
-        
+
         if self.computer_move:
             print(self.color_text('Current player: {}'.format(self.color_text(
-            " " + 'Computer' + " ", 'white', 'dark red')), 'blue', 'black'))
+                " " + 'Computer' + " ", 'white', 'dark red')), 'blue', 'black'))
         else:
             print(self.color_text('Current player: {}'.format(self.color_text(
                 " " + str(self.current_player) + " ", 'white', 'dark red')), 'blue', 'black'))
@@ -229,7 +233,7 @@ class Game:
         red_circle = self.color_text("O", 'red', 'dark green')
         red_cross = self.color_text("X", 'red', 'dark green')
         value = []
-        
+
         i = 0
         for led in self.leds:
             if led.selected == 1 and led.matched:
@@ -247,7 +251,7 @@ class Game:
                     value.append(self.color_text("X", 'yellow', 'dark green'))
             else:
                 value.append(space)
-            
+
             i += 1
 
         print('\n')
@@ -302,11 +306,11 @@ class Game:
             if led != self.leds[self.navigation_button_position - 1] and led.selected == 0:
                 led.turn_off()
                 led.stop_blinking()
-    
+
     def enable_computer_vs_human_mode(self):
         '''Enables computer vs human mode'''
         self.computer_vs_human_mode = True
-    
+
     def disable_computer_vs_human_mode(self):
         '''Disables computer vs human mode'''
         self.computer_vs_human_mode = False
@@ -319,15 +323,16 @@ class Game:
         '''Enables computer move'''
         self.computer_move = True
 
-    def computer_move(self):
+    def do_computer_move(self):
         '''Computer move for easy level it set the random position for navigation button'''
-
+        print('Computer move')
         game_board = [led.selected for led in self.leds]
+        print(game_board)
         symbol = 2
 
         if self.do_all_leds_selected():
             raise Exception('All LEDs are selected')
-        
+
         # Define a list of possible moves (i.e., indices of the board where the value is 0)
         possible_moves = [i for i, val in enumerate(game_board) if val == 0]
 
@@ -338,13 +343,13 @@ class Game:
             for i in range(3):
                 # Check rows
                 if test_board[i*3:(i+1)*3] == [symbol]*3:
-                    self.navigation_button_position =  move
+                    self.navigation_button_position = move
                 # Check columns
                 if test_board[i::3] == [symbol]*3:
-                    self.navigation_button_position =  move
+                    self.navigation_button_position = move
             # Check diagonals
             if test_board[0::4] == [symbol]*3 or test_board[2:7:2] == [symbol]*3:
-                self.navigation_button_position =  move
+                self.navigation_button_position = move
 
         # Check if the opponent has an opportunity to win
         opponent_symbol = 1 if symbol == 2 else 2
@@ -354,17 +359,17 @@ class Game:
             for i in range(3):
                 # Check rows
                 if test_board[i*3:(i+1)*3] == [opponent_symbol]*3:
-                    self.navigation_button_position =  move
+                    self.navigation_button_position = move
                 # Check columns
                 if test_board[i::3] == [opponent_symbol]*3:
-                    self.navigation_button_position =  move
+                    self.navigation_button_position = move
             # Check diagonals
             if test_board[0::4] == [opponent_symbol]*3 or test_board[2:7:2] == [opponent_symbol]*3:
-                self.navigation_button_position =  move
+                self.navigation_button_position = move
 
         # If there is no opportunity to win or block the opponent's winning move, sdo a random move
-        self.navigation_button_position =  random.choice(possible_moves)
-        
+        self.navigation_button_position = random.choice(possible_moves)
+
     def select(self):
         '''Selects the LED using the select button'''
         if self.navigation_button_position == 0:
@@ -432,7 +437,7 @@ class Game:
 
     def announce_win(self):
         '''Announces the winner'''
-        self.score[self.current_player] += 1
+        self.score[self.current_player] += 100
         self.finished = True
         self.remaining_chances -= 1
         os.system('cls')
@@ -443,8 +448,8 @@ class Game:
             '\nTo play again, press the navigation button. To exit, press the select button.')
 
     def announce_draw(self):
-        self.score[1] += 0.5
-        self.score[2] += 0.5
+        self.score[1] += 50
+        self.score[2] += 50
         self.finished = True
         self.remaining_chances -= 1
         os.system('cls')
@@ -493,7 +498,9 @@ class Game:
         self.computer_move = False
         self.computer_move_start_time = 0
         self.started = False
-    
+        self.can_start_again = True
+        self.can_get_input = True
+
     def handle_selection(self):
         '''Handles the selection of the navigation button'''
         try:
@@ -504,19 +511,19 @@ class Game:
                 self.announce_win()
             elif self.check_for_draw():
                 self.announce_draw()
-            
+
             if not self.finished:
                 self.switch_players()
-            
+
             if self.remaining_chances == 0:
                 print('\nNo more chances left.')
                 self.announce_final_winner()
-                self.reset_game()            
+                self.reset_game()
 
         except Exception as e:
             print('\n')
             print(e)
-    
+
     def handle_navigation(self):
         '''Handles the navigation button'''
         try:
@@ -535,13 +542,12 @@ class Game:
             print('\nYou have chosen to reset the game.')
             self.announce_final_winner()
             print('\nResetting the game in 3 seconds...')
-            time.sleep(3)
             self.reset_game()
             self.welcome()
         except Exception as e:
             print('\n')
             print(e)
-    
+
     def handle_play_next_chance(self):
         '''Handles the play next chance button'''
         try:
@@ -553,9 +559,9 @@ class Game:
 
     def handle_computer_move(self):
         '''Handles the computer move'''
-        self.computer_move()
+        self.do_computer_move()
         self.handle_selection()
-    
+
 # Functions
 
 
