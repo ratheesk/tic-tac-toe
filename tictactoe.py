@@ -642,6 +642,7 @@ class Game:
         '''Handles the play next chance button'''
         try:
             self.play_next_chance()
+            self.refresh_game_board()
         except Exception as e:
             print('\n')
             print(e)

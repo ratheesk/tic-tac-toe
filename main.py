@@ -35,12 +35,6 @@ except Exception as e:
     print('Error while creating the LED objects: {}'.format(e))
     exit(1)
 
-try:
-    # Create the Game object
-    game = ttt.Game(leds, CHANCES_TO_PLAY)
-except Exception as e:
-    print('Error while creating the Game object: {}'.format(e))
-    exit(1)
 
 # Set navigate button pin mode to INPUT_PULLUP
 NAV_BUTTON = board.get_pin('d:{}:i'.format(NAV_BUTTON_PIN))
@@ -50,93 +44,100 @@ SELECT_BUTTON = board.get_pin('d:{}:i'.format(SELECT_BUTTON_PIN))
 NAV_BUTTON.enable_reporting()
 SELECT_BUTTON.enable_reporting()
 
-# Start the game
-game.welcome()
-game.show_loading_window()
-game.show_instruction_window()
-time.sleep(5)
-game.show_choose_mode_window()
-game.can_get_input = True
 
-# Main Loop
-while True:
-    for event in pg.event.get():
-        if event.type == QUIT:
-            game.handle_exit()
-            pg.quit()
-            sys.exit()
+def play_tic_tac_toe():
+    global last_nav_button_state, last_select_button_state, NAV_BUTTON, SELECT_BUTTON, CHANCES_TO_PLAY, leds
+    try:
+        # Create the Game object
+        ttt_game = ttt.Game(leds, CHANCES_TO_PLAY)
+    except Exception as e:
+        print('Error while creating the Game object: {}'.format(e))
+        exit(1)
+    # Start the game
+    ttt_game.welcome()
+    ttt_game.show_loading_window()
+    ttt_game.show_instruction_window()
+    time.sleep(5)
+    ttt_game.show_choose_mode_window()
+    ttt_game.can_get_input = True
 
-        # global last_nav_button_state, last_select_button_state, game, NAV_BUTTON, SELECT_BUTTON
-    current_time = time.time()
-    # Read the buttons' states
-    nav_button_state = NAV_BUTTON.read()
-    select_button_state = SELECT_BUTTON.read()
+    # Main Loop
+    while True:
+        for event in pg.event.get():
+            if event.type == QUIT:
+                ttt_game.handle_exit()
+                pg.quit()
+                sys.exit()
 
-    nav_button_pressed = game.can_get_input and nav_button_state and last_nav_button_state != nav_button_state
-    select_button_pressed = game.can_get_input and select_button_state and last_select_button_state != select_button_state
+            # global last_nav_button_state, last_select_button_state, game, NAV_BUTTON, SELECT_BUTTON
+        current_time = time.time()
+        # Read the buttons' states
+        nav_button_state = NAV_BUTTON.read()
+        select_button_state = SELECT_BUTTON.read()
 
-    can_start_again = nav_button_pressed and game.can_start_again
-    can_select = select_button_pressed and not game.finished and not game.computer_move and game.started
-    can_nav = nav_button_pressed and not game.finished and not game.computer_move and game.started
-    can_play_next_chance = nav_button_pressed and game.finished and game.started
-    can_exit = select_button_pressed and game.finished and game.started
-    can_computer_play = game.computer_move and not game.finished and game.computer_vs_human_mode and (
-        (current_time - game.computer_move_start_time) > game.computer_move_delay)
-    human_vs_human = nav_button_pressed and not game.started
-    computer_vs_human = select_button_pressed and not game.started
+        nav_button_pressed = ttt_game.can_get_input and nav_button_state and last_nav_button_state != nav_button_state
+        select_button_pressed = ttt_game.can_get_input and select_button_state and last_select_button_state != select_button_state
 
-    if can_start_again:
-        game.handle_start_again()
+        can_start_again = nav_button_pressed and ttt_game.can_start_again
+        can_select = select_button_pressed and not ttt_game.finished and not ttt_game.computer_move and ttt_game.started
+        can_nav = nav_button_pressed and not ttt_game.finished and not ttt_game.computer_move and ttt_game.started
+        can_play_next_chance = nav_button_pressed and ttt_game.finished and ttt_game.started
+        can_exit = select_button_pressed and ttt_game.finished and ttt_game.started
+        can_computer_play = ttt_game.computer_move and not ttt_game.finished and ttt_game.computer_vs_human_mode and (
+            (current_time - ttt_game.computer_move_start_time) > ttt_game.computer_move_delay)
+        human_vs_human = nav_button_pressed and not ttt_game.started
+        computer_vs_human = select_button_pressed and not ttt_game.started
 
+        if can_start_again:
+            ttt_game.handle_start_again()
+
+            last_nav_button_state = nav_button_state
+
+        # If the game is not started, then
+        if human_vs_human and last_nav_button_state != nav_button_state:
+            ttt_game.start_game()
+
+        if computer_vs_human:
+            ttt_game.enable_computer_vs_human_mode()
+            ttt_game.start_game()
+
+        # If the computer is playing, then
+        if can_computer_play:
+
+            ttt_game.do_computer_move()
+            ttt_game.handle_selection()
+            ttt_game.clear_computer_is_thinking()
+
+        # If the navigation button state and select button state have changed at same time, then
+        if nav_button_pressed and select_button_pressed:
+            print('\nPlease use one button at a time.')
+
+        # If the navigation button state has changed and the game is finished, then
+        if can_play_next_chance:
+            ttt_game.handle_play_next_chance()
+
+            last_nav_button_state = nav_button_state
+
+        # If the navigation button state has changed and the game is not finished, then
+        if can_nav:
+            ttt_game.handle_navigation()
+
+        # If the select button state has changed and the game is not finished, then
+        if can_select:
+            ttt_game.handle_selection()
+
+        # Update the last button states
         last_nav_button_state = nav_button_state
+        last_select_button_state = select_button_state
 
-    # If the game is not started, then
-    if human_vs_human and last_nav_button_state != nav_button_state:
-        game.start_game()
+        # Blink all the LEDs which are enabled to blink
+        ttt.blink_all(leds)
 
-    if computer_vs_human:
-        game.enable_computer_vs_human_mode()
-        game.start_game()
+        pg.display.update()
 
-    # If the computer is playing, then
-    if can_computer_play:
+        # fps_clock.tick(FPS)
 
-        game.do_computer_move()
-        game.handle_selection()
-        game.clear_computer_is_thinking()
 
-    # If the navigation button state and select button state have changed at same time, then
-    if nav_button_pressed and select_button_pressed:
-        print('\nPlease use one button at a time.')
-
-    # If the navigation button state has changed and the game is finished, then
-    if can_play_next_chance:
-        game.handle_play_next_chance()
-        game.refresh_game_board()
-
-        last_nav_button_state = nav_button_state
-
-    # # If the select button state has changed and the game is finished, then
-    # if can_exit:
-    #     game.handle_exit()
-
-    #     last_select_button_state = select_button_state
-
-    # If the navigation button state has changed and the game is not finished, then
-    if can_nav:
-        game.handle_navigation()
-
-    # If the select button state has changed and the game is not finished, then
-    if can_select:
-        game.handle_selection()
-
-    # Update the last button states
-    last_nav_button_state = nav_button_state
-    last_select_button_state = select_button_state
-
-    # Blink all the LEDs which are enabled to blink
-    ttt.blink_all(leds)
-
-    pg.display.update()
-
-    # fps_clock.tick(FPS)
+play_tic_tac_toe()
+pg.quit()
+sys.exit()
