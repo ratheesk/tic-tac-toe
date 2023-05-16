@@ -441,7 +441,7 @@ class Game:
         if self.do_all_leds_selected():
             raise Exception('All LEDs are selected')
 
-        # Define a list of possible moves (i.e., indices of the board where the value is 0)
+        # Define a list of possible moves
         possible_moves = [i for i, val in enumerate(game_board) if val == 0]
 
         # Check if there is an opportunity to win the self
@@ -451,13 +451,16 @@ class Game:
             for i in range(3):
                 # Check rows
                 if test_board[i*3:(i+1)*3] == [symbol]*3:
-                    self.navigation_button_position = move
+                    self.navigation_button_position = move + 1
+                    return
                 # Check columns
                 if test_board[i::3] == [symbol]*3:
-                    self.navigation_button_position = move
+                    self.navigation_button_position = move + 1
+                    return
             # Check diagonals
             if test_board[0::4] == [symbol]*3 or test_board[2:7:2] == [symbol]*3:
-                self.navigation_button_position = move
+                self.navigation_button_position = move + 1
+                return
 
         # Check if the opponent has an opportunity to win
         opponent_symbol = 1 if symbol == 2 else 2
@@ -467,16 +470,19 @@ class Game:
             for i in range(3):
                 # Check rows
                 if test_board[i*3:(i+1)*3] == [opponent_symbol]*3:
-                    self.navigation_button_position = move
+                    self.navigation_button_position = move + 1
+                    return
                 # Check columns
                 if test_board[i::3] == [opponent_symbol]*3:
-                    self.navigation_button_position = move
+                    self.navigation_button_position = move + 1
+                    return
             # Check diagonals
             if test_board[0::4] == [opponent_symbol]*3 or test_board[2:7:2] == [opponent_symbol]*3:
-                self.navigation_button_position = move
+                self.navigation_button_position = move + 1
+                return
 
         # If there is no opportunity to win or block the opponent's winning move, sdo a random move
-        self.navigation_button_position = random.choice(possible_moves)
+        self.navigation_button_position = random.choice(possible_moves) + 1
 
     def select(self):
         '''Selects the LED using the select button'''
