@@ -88,37 +88,43 @@ def play_tic_tac_toe():
         computer_vs_human = select_button_pressed and not ttt_game.started
 
         if can_start_again:
+            ttt_game.play_button_click_sound()
             ttt_game.handle_start_again()
 
             last_nav_button_state = nav_button_state
 
         # If the game is not started, then
         if human_vs_human and last_nav_button_state != nav_button_state:
+            ttt_game.play_button_click_sound()
             ttt_game.start_game()
 
         if computer_vs_human:
+            ttt_game.play_button_click_sound()
             ttt_game.enable_computer_vs_human_mode()
             ttt_game.start_game()
 
         # If the computer is playing, then
         if can_computer_play:
-
+            ttt_game.play_button_click_sound()
             ttt_game.do_computer_move()
             ttt_game.handle_selection()
             ttt_game.clear_computer_is_thinking()
 
         # If the navigation button state and select button state have changed at same time, then
         if nav_button_pressed and select_button_pressed:
+            ttt_game.play_button_click_sound()
             print('\nPlease use one button at a time.')
 
         # If the navigation button state has changed and the game is finished, then
         if can_play_next_chance:
+            ttt_game.play_button_click_sound()
             ttt_game.handle_play_next_chance()
 
             last_nav_button_state = nav_button_state
 
         # If the navigation button state has changed and the game is not finished, then
         if can_nav:
+            ttt_game.play_button_click_sound()
             ttt_game.handle_navigation()
 
         # If the select button state has changed and the game is not finished, then

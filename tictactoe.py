@@ -98,6 +98,7 @@ class Game:
         self.started = False
         self.finished = False
         self.navigation_button_position = 0
+        self.navigation_button_last_position = 0
         self.current_player = 1
         self.player_played_first = 1
         self.remaining_chances = self.chances
@@ -111,6 +112,8 @@ class Game:
 
         self.SCREEN_WIDTH = 1200
         self.SCREEN_HEIGHT = 800
+        self.CELL_COORDINATES = [(73, 77), (256, 77), (439, 77), (73, 259),
+                                 (256, 259), (439, 259), (73, 442), (256, 442), (439, 442)]
         self.BOARD_COORDINATES = [(101, 101), (288, 101), (468, 101), (101, 281),
                                   (288, 281), (468, 281), (101, 466), (288, 466), (468, 466)]
 
@@ -135,27 +138,34 @@ class Game:
         pg.display.set_caption('Tic Tac Toe')
 
         # Load the images
-        self.loading_window = pg.image.load("assets/loading.png")
-        self.instruction_window = pg.image.load("assets/instruction.png")
-        self.choose_mode_window = pg.image.load("assets/choose_mode.png")
+        self.loading_window = pg.image.load("assets/images/loading.png")
+        self.instruction_window = pg.image.load(
+            "assets/images/instruction.png")
+        self.choose_mode_window = pg.image.load(
+            "assets/images/choose_mode.png")
         self.champion_player_o_window = pg.image.load(
-            "assets/champion_player_o.png")
+            "assets/images/champion_player_o.png")
         self.champion_player_x_window = pg.image.load(
-            "assets/champion_player_x.png")
-        self.match_is_draw_window = pg.image.load("assets/match_is_draw.png")
-        self.thankyou_window = pg.image.load("assets/thankyou.png")
-        self.player_o_won = pg.image.load("assets/player_o_won.png")
-        self.player_x_won = pg.image.load("assets/player_x_won.png")
-        self.game_is_tie = pg.image.load("assets/game_is_tie.png")
-        self.game_board = pg.image.load("assets/game_board.png")
-        self.x_img = pg.image.load("assets/x.png")
-        self.o_img = pg.image.load("assets/o.png")
-        self.life = pg.image.load("assets/life.png")
-        self.player_bg = pg.image.load("assets/player_bg.png")
+            "assets/images/champion_player_x.png")
+        self.match_is_draw_window = pg.image.load(
+            "assets/images/match_is_draw.png")
         self.computer_is_thinking = pg.image.load(
-            "assets/computer_is_thinking.png")
+            "assets/images/computer_is_thinking.png")
         self.computer_is_thinking_bg = pg.image.load(
-            "assets/computer_is_thinking_bg.png")
+            "assets/images/computer_is_thinking_bg.png")
+        self.cell_selected_bg = pg.image.load(
+            "assets/images/cell_selected.png")
+        self.cell_not_selected_bg = pg.image.load(
+            "assets/images/cell_not_selected.png")
+        self.thankyou_window = pg.image.load("assets/images/thankyou.png")
+        self.player_o_won = pg.image.load("assets/images/player_o_won.png")
+        self.player_x_won = pg.image.load("assets/images/player_x_won.png")
+        self.game_is_tie = pg.image.load("assets/images/game_is_tie.png")
+        self.game_board = pg.image.load("assets/images/game_board.png")
+        self.x_img = pg.image.load("assets/images/x.png")
+        self.o_img = pg.image.load("assets/images/o.png")
+        self.life = pg.image.load("assets/images/life.png")
+        self.player_bg = pg.image.load("assets/images/player_bg.png")
 
         # Resize images
         self.loading_window = pg.transform.scale(
@@ -174,6 +184,14 @@ class Game:
             self.thankyou_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
         self.game_board = pg.transform.scale(
             self.game_board, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.computer_is_thinking = pg.transform.scale(
+            self.computer_is_thinking, (561, 121))
+        self.computer_is_thinking_bg = pg.transform.scale(
+            self.computer_is_thinking_bg, (561, 121))
+        self.cell_selected_bg = pg.transform.scale(
+            self.cell_selected_bg, (164, 164))
+        self.cell_not_selected_bg = pg.transform.scale(
+            self.cell_not_selected_bg, (164, 164))
         self.player_o_won = pg.transform.scale(self.player_o_won, (764, 548))
         self.player_x_won = pg.transform.scale(self.player_x_won, (764, 548))
         self.game_is_tie = pg.transform.scale(self.game_is_tie, (764, 548))
@@ -184,10 +202,15 @@ class Game:
         self.player_bg = pg.transform.scale(self.player_bg, (53.5, 59))
         self.life = pg.transform.scale(self.life, (54, 48))
         self.life_bg = pg.transform.scale(self.player_bg, (54, 48))
-        self.computer_is_thinking = pg.transform.scale(
-            self.computer_is_thinking, (561, 121))
-        self.computer_is_thinking_bg = pg.transform.scale(
-            self.computer_is_thinking_bg, (561, 121))
+
+        # Load the sounds
+        self.select_sound = pg.mixer.Sound("assets/sounds/select.wav")
+        self.start_game_sound = pg.mixer.Sound("assets/sounds/start_game.wav")
+        self.won_game_sound = pg.mixer.Sound("assets/sounds/won_game.wav")
+        self.announce_champion_sound = pg.mixer.Sound(
+            "assets/sounds/announce_champion.wav")
+        self.click_button_sound = pg.mixer.Sound(
+            "assets/sounds/click_button.wav")
 
     def show_computer_is_thinking(self):
         '''Shows the computer is thinking message'''
@@ -234,12 +257,24 @@ class Game:
         self.screen.blit(self.o_img, position)
         pg.display.update()
 
+    def draw_cell_selected(self, position):
+        '''Draws cell selected on the screen'''
+        self.screen.blit(self.cell_selected_bg, position)
+        pg.display.update()
+
+    def draw_cell_not_selected(self, position):
+        '''Draws cell not selected on the screen'''
+        self.screen.blit(self.cell_not_selected_bg, position)
+        pg.display.update()
+
     def update_game_board(self):
         '''Updates the game board'''
         for i in range(9):
             if self.leds[i].selected == 1:
+                self.draw_cell_not_selected(self.CELL_COORDINATES[i])
                 self.draw_o(self.BOARD_COORDINATES[i])
             elif self.leds[i].selected == 2:
+                self.draw_cell_not_selected(self.CELL_COORDINATES[i])
                 self.draw_x(self.BOARD_COORDINATES[i])
 
     def draw_player_x(self):
@@ -385,6 +420,7 @@ class Game:
         self.started = True
         self.welcome()
         self.refresh_game_board()
+        pg.mixer.Sound.play(self.start_game_sound)
 
     def do_all_leds_selected(self):
         '''Returns True if all the LEDs are selected'''
@@ -397,6 +433,8 @@ class Game:
         '''Navigates the LEDS using the navigation button'''
         if self.do_all_leds_selected():
             raise Exception('All LEDs are selected')
+
+        self.navigation_button_last_position = self.navigation_button_position
 
         self.navigation_button_position = self.navigation_button_position % len(
             self.leds) + 1
@@ -573,6 +611,14 @@ class Game:
         try:
             self.navigate()
 
+            if self.navigation_button_last_position != 0:
+                self.draw_cell_not_selected(
+                    self.CELL_COORDINATES[self.navigation_button_last_position - 1])
+
+            if self.navigation_button_position != 0:
+                self.draw_cell_selected(
+                    self.CELL_COORDINATES[self.navigation_button_position - 1])
+
         except Exception as e:
             print('\n')
             print(e)
@@ -584,6 +630,7 @@ class Game:
             self.select()
             self.navigation_button_position = 0
             self.update_game_board()
+            pg.mixer.Sound.play(self.select_sound)
 
             self.can_get_input = True
 
@@ -591,12 +638,15 @@ class Game:
                 self.handle_win()
                 if self.current_player == 1:
                     self.show_player_o_won()
+                    pg.mixer.Sound.play(self.won_game_sound)
                 elif self.current_player == 2:
                     self.show_player_x_won()
+                    pg.mixer.Sound.play(self.won_game_sound)
 
             elif self.check_for_draw():
                 self.handle_draw()
                 self.show_game_is_tie()
+                pg.mixer.Sound.play(self.won_game_sound)
 
             if not self.finished:
                 self.switch_players()
@@ -616,10 +666,14 @@ class Game:
                 print('\nNo more chances left.')
                 if self.score[1] > self.score[2]:
                     self.show_champion_player_o_window()
+                    pg.mixer.Sound.play(self.announce_champion_sound)
                 elif self.score[1] < self.score[2]:
                     self.show_champion_player_x_window()
+                    pg.mixer.Sound.play(self.announce_champion_sound)
                 else:
                     self.show_match_is_draw_window()
+                    pg.mixer.Sound.play(self.announce_champion_sound)
+
                 self.reset_game()
 
         except Exception as e:
@@ -641,6 +695,8 @@ class Game:
         try:
             self.play_next_chance()
             self.refresh_game_board()
+            pg.mixer.Sound.play(self.start_game_sound)
+
         except Exception as e:
             print('\n')
             print(e)
@@ -658,6 +714,10 @@ class Game:
         self.show_choose_mode_window()
         self.can_get_input = True
         self.can_start_again = False
+
+    def play_button_click_sound(self):
+        '''Plays the button sound'''
+        pg.mixer.Sound.play(self.click_button_sound)
 
 # Functions
 
