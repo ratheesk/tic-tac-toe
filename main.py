@@ -11,11 +11,7 @@ ARDUINO_PORT = 'COM6'
 LED_PINS = {1: 2, 2: 3, 3: 4, 4: 5, 5: 6, 6: 7, 7: 8, 8: 9, 9: 10}
 NAV_BUTTON_PIN = 11
 SELECT_BUTTON_PIN = 12
-CHANCES_TO_PLAY = 3
 
-# variables
-last_nav_button_state = False
-last_select_button_state = False
 
 try:
     # Connect to the Arduino board
@@ -28,28 +24,31 @@ except Exception as e:
     print('Error while connecting to the Arduino board: {}'.format(e))
     exit(1)
 
-try:
-    # Create a list of LED objects
-    leds = [ttt.Led(pin, board) for pin in LED_PINS.values()]
-except Exception as e:
-    print('Error while creating the LED objects: {}'.format(e))
-    exit(1)
-
-
-# Set navigate button pin mode to INPUT_PULLUP
-NAV_BUTTON = board.get_pin('d:{}:i'.format(NAV_BUTTON_PIN))
-SELECT_BUTTON = board.get_pin('d:{}:i'.format(SELECT_BUTTON_PIN))
-
-# Enable reporting for the buttons
-NAV_BUTTON.enable_reporting()
-SELECT_BUTTON.enable_reporting()
-
 
 def play_tic_tac_toe():
-    global last_nav_button_state, last_select_button_state, NAV_BUTTON, SELECT_BUTTON, CHANCES_TO_PLAY, leds
+    global NAV_BUTTON_PIN, SELECT_BUTTON_PIN, board
+
+    # variables
+    last_nav_button_state = False
+    last_select_button_state = False
+
+    try:
+        # Create a list of LED objects
+        leds = [ttt.Led(pin, board) for pin in LED_PINS.values()]
+    except Exception as e:
+        print('Error while creating the LED objects: {}'.format(e))
+        exit(1)
+
+    # Set navigate button pin mode to INPUT_PULLUP
+    NAV_BUTTON = board.get_pin('d:{}:i'.format(NAV_BUTTON_PIN))
+    SELECT_BUTTON = board.get_pin('d:{}:i'.format(SELECT_BUTTON_PIN))
+
+    # Enable reporting for the buttons
+    NAV_BUTTON.enable_reporting()
+    SELECT_BUTTON.enable_reporting()
     try:
         # Create the Game object
-        ttt_game = ttt.Game(leds, CHANCES_TO_PLAY)
+        ttt_game = ttt.Game(leds)
     except Exception as e:
         print('Error while creating the Game object: {}'.format(e))
         exit(1)

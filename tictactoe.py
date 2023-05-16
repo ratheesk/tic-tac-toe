@@ -70,7 +70,7 @@ class Led:
 class Game:
     '''Represents a Tic Tac Toe Game'''
 
-    def __init__(self, leds, chances):
+    def __init__(self, leds):
         '''Initializes the game with the LEDs and the chances
         leds: A list of LED objects
         chances: The number of chances each player gets
@@ -90,13 +90,11 @@ class Game:
         '''
         if not isinstance(leds, list):
             raise TypeError('leds must be a list')
-        if not isinstance(chances, int):
-            raise TypeError('chances must be an integer')
         if not isinstance(leds[0], Led):
             raise TypeError('leds must be a list of Led objects')
 
         self.leds = leds
-        self.chances = chances
+        self.chances = 3
         self.started = False
         self.finished = False
         self.navigation_button_position = 0
