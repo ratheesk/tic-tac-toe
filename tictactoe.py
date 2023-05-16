@@ -1,5 +1,5 @@
-# This is a Tic Tac Toe game that is played on a breadboard using an Arduino Uno and a 3x3 LED matrix
-# The game is played by two players and the players take turns to play
+# This is a Tic Tac Toe self that is played on a breadboard using an Arduino Uno and a 3x3 LED matrix
+# The self is played by two players and the players take turns to play
 # The players can navigate through the LEDs using the navigation button and select an LED using the select button
 # The player who plays first is chosen randomly
 # The player who plays first is represented by 1 and the player who plays second is represented by 2
@@ -9,6 +9,8 @@ import time
 import os
 import random
 from pyfirmata import Arduino
+import pygame as pg
+from pygame.locals import *
 # Classes
 
 
@@ -23,7 +25,6 @@ class Led:
         last_time_blinked: The last time the LED blinked
         can_blink: A boolean that represents whether the LED can blink or not
         selected: A boolean that represents whether the LED is selected or not
-        matched: A boolean that represents whether the LED is matched or not
         '''
         if not isinstance(pin, int):
             raise TypeError('pin must be an integer')
@@ -36,7 +37,6 @@ class Led:
         self.last_time_blinked = 0
         self.can_blink = False
         self.selected = 0
-        self.matched = False
 
     def turn_on(self):
         '''Turns the LED on by writing 1 to the pin and setting the state to 1'''
@@ -68,7 +68,7 @@ class Led:
 
 
 class Game:
-    '''Represents a Tic Tac Toe game'''
+    '''Represents a Tic Tac Toe Game'''
 
     def __init__(self, leds, chances):
         '''Initializes the game with the LEDs and the chances
@@ -111,26 +111,246 @@ class Game:
         self.can_get_input = False
         self.can_start_again = False
 
-    def color_text(self, text, fg_color='white', bg_color='black'):
-        '''Returns the text with the specified foreground and background color'''
-        colors = {
-            'black': '235',
-            'red': '196',
-            'green': '46',
-            'yellow': '228',
-            'blue': '45',
-            'purple': '165',
-            'cyan': '159',
-            'white': '231',
-            'orange': '209',
-            'dark red': '88',
-            'dark green': '22',
-            'dark blue': '18',
-        }
-        text = "\033[48;5;{}m\033[38;5;{}m{}\033[0;0m".format(
-            colors[bg_color], colors[fg_color], text)
+        self.SCREEN_WIDTH = 1200
+        self.SCREEN_HEIGHT = 800
+        self.BOARD_COORDINATES = [(101, 101), (288, 101), (468, 101), (101, 281),
+                                  (288, 281), (468, 281), (101, 466), (288, 466), (468, 466)]
 
-        return text
+        self.initialize_gui()
+
+    def initialize_gui(self):
+        '''Initializes the GUI'''
+        # Initialize pygame
+        pg.init()
+
+        # Initialize the font
+        pg.font.init()
+
+        self.default_font = pg.font.get_default_font()
+        self.font_renderer = pg.font.Font(self.default_font, 30)
+
+        # Create the screen object
+        self.screen = pg.display.set_mode(
+            (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+
+        # Set the window title
+        pg.display.set_caption('Tic Tac Toe')
+
+        # Load the images
+        self.loading_window = pg.image.load("assets/loading.png")
+        self.instruction_window = pg.image.load("assets/instruction.png")
+        self.choose_mode_window = pg.image.load("assets/choose_mode.png")
+        self.champion_player_o_window = pg.image.load(
+            "assets/champion_player_o.png")
+        self.champion_player_x_window = pg.image.load(
+            "assets/champion_player_x.png")
+        self.match_is_draw_window = pg.image.load("assets/match_is_draw.png")
+        self.thankyou_window = pg.image.load("assets/thankyou.png")
+        self.player_o_won = pg.image.load("assets/player_o_won.png")
+        self.player_x_won = pg.image.load("assets/player_x_won.png")
+        self.game_is_tie = pg.image.load("assets/game_is_tie.png")
+        self.game_board = pg.image.load("assets/game_board.png")
+        self.x_img = pg.image.load("assets/x.png")
+        self.o_img = pg.image.load("assets/o.png")
+        self.life = pg.image.load("assets/life.png")
+        self.player_bg = pg.image.load("assets/player_bg.png")
+        self.computer_is_thinking = pg.image.load(
+            "assets/computer_is_thinking.png")
+        self.computer_is_thinking_bg = pg.image.load(
+            "assets/computer_is_thinking_bg.png")
+
+        # Resize images
+        self.loading_window = pg.transform.scale(
+            self.loading_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.instruction_window = pg.transform.scale(
+            self.instruction_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.choose_mode_window = pg.transform.scale(
+            self.choose_mode_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.champion_player_o_window = pg.transform.scale(
+            self.champion_player_o_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.champion_player_x_window = pg.transform.scale(
+            self.champion_player_x_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.match_is_draw_window = pg.transform.scale(
+            self.match_is_draw_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.thankyou_window = pg.transform.scale(
+            self.thankyou_window, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.game_board = pg.transform.scale(
+            self.game_board, (self.SCREEN_WIDTH, self.SCREEN_HEIGHT))
+        self.player_o_won = pg.transform.scale(self.player_o_won, (764, 548))
+        self.player_x_won = pg.transform.scale(self.player_x_won, (764, 548))
+        self.game_is_tie = pg.transform.scale(self.game_is_tie, (764, 548))
+        self.x_img = pg.transform.scale(self.x_img, (107, 118))
+        self.o_img = pg.transform.scale(self.o_img, (107, 118))
+        self.player_x = pg.transform.scale(self.x_img, (53.5, 59))
+        self.player_o = pg.transform.scale(self.o_img, (53.5, 59))
+        self.player_bg = pg.transform.scale(self.player_bg, (53.5, 59))
+        self.life = pg.transform.scale(self.life, (54, 48))
+        self.life_bg = pg.transform.scale(self.player_bg, (54, 48))
+        self.computer_is_thinking = pg.transform.scale(
+            self.computer_is_thinking, (561, 121))
+        self.computer_is_thinking_bg = pg.transform.scale(
+            self.computer_is_thinking_bg, (561, 121))
+
+    def show_computer_is_thinking(self):
+        '''Shows the computer is thinking message'''
+        self.screen.blit(self.computer_is_thinking, (65, 660))
+        pg.display.update()
+
+    def clear_computer_is_thinking(self):
+        '''Clears the computer is thinking message'''
+        self.screen.blit(self.computer_is_thinking_bg, (65, 660))
+        pg.display.update()
+
+    def show_player_o_won(self):
+        '''Shows the player O won message'''
+        self.screen.blit(self.player_o_won, (218, 116))
+        pg.display.update()
+
+    def show_player_x_won(self):
+        '''Shows the player X won message'''
+        self.screen.blit(self.player_x_won, (218, 116))
+        pg.display.update()
+
+    def show_game_is_tie(self):
+        '''Shows the game is tie message'''
+        self.screen.blit(self.game_is_tie, (218, 116))
+        pg.display.update()
+
+    def draw_score(self):
+        '''Draws the score on the screen'''
+        player_1_score = self.font_renderer.render(
+            str(self.score[1]), 1, (255, 255, 255))
+        player_2_score = self.font_renderer.render(
+            str(self.score[2]), 1, (255, 255, 255))
+        self.screen.blit(player_1_score, (982, 503))
+        self.screen.blit(player_2_score, (982, 590))
+        pg.display.update()
+
+    def draw_x(self, position):
+        '''Draws X on the screen'''
+        self.screen.blit(self.x_img, position)
+        pg.display.update()
+
+    def draw_o(self, position):
+        '''Draws O on the screen'''
+        self.screen.blit(self.o_img, position)
+        pg.display.update()
+
+    def update_game_board(self):
+        '''Updates the game board'''
+        for i in range(9):
+            if self.leds[i].selected == 1:
+                self.draw_o(self.BOARD_COORDINATES[i])
+            elif self.leds[i].selected == 2:
+                self.draw_x(self.BOARD_COORDINATES[i])
+
+    def draw_player_x(self):
+        '''Draws player X on the screen'''
+        self.screen.blit(self.player_bg, (912, 130))
+        self.screen.blit(self.player_x, (912, 130))
+        pg.display.update()
+
+    def draw_player_o(self):
+        '''Draws player O on the screen'''
+        self.screen.blit(self.player_bg, (912, 130))
+        self.screen.blit(self.player_o, (912, 130))
+        pg.display.update()
+
+    def draw_life(self):
+        '''Draws the remaining chances'''
+        if self.remaining_chances == 3:
+            self.screen.blit(self.life, (894, 220))
+            self.screen.blit(self.life, (960, 220))
+            self.screen.blit(self.life, (1026, 220))
+        elif self.remaining_chances == 2:
+            self.screen.blit(self.life, (894, 220))
+            self.screen.blit(self.life, (960, 220))
+            self.screen.blit(self.life_bg, (1026, 220))
+        elif self.remaining_chances == 1:
+            self.screen.blit(self.life, (894, 220))
+            self.screen.blit(self.life_bg, (960, 220))
+        elif self.remaining_chances == 0:
+            self.screen.blit(self.life_bg, (894, 220))
+
+        pg.display.update()
+
+    def show_game_board(self):
+        '''Shows the game board'''
+        # Displaying over gamescreen
+        self.screen.blit(self.game_board, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+
+    def show_choose_mode_window(self):
+        '''Shows the choose mode window'''
+        # Displaying over gamescreen
+        self.screen.blit(self.choose_mode_window, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+
+    def show_loading_window(self):
+        '''Shows the loading window'''
+        # Displaying over gamescreen
+        self.screen.blit(self.loading_window, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+        time.sleep(3)
+
+    def show_instruction_window(self):
+        '''Shows the instruction window'''
+        # Displaying over gamescreen
+        self.screen.blit(self.instruction_window, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+
+    def show_thankyou_window(self):
+        '''Shows the thankyou window'''
+        # Displaying over gamescreen
+        self.screen.blit(self.thankyou_window, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+
+    def show_champion_player_o_window(self):
+        '''Shows the champion player O window'''
+        # Displaying over gamescreen
+        self.screen.blit(self.champion_player_o_window, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+
+    def show_champion_player_x_window(self):
+        '''Shows the champion player X window'''
+        # Displaying over gamescreen
+        self.screen.blit(self.champion_player_x_window, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+
+    def show_match_is_draw_window(self):
+        '''Shows the match is draw window'''
+        # Displaying over gamescreen
+        self.screen.blit(self.match_is_draw_window, (0, 0))
+
+        # Updating the display
+        pg.display.update()
+
+    def refresh_game_board(self):
+        '''Refreshes the game board'''
+        self.show_game_board()
+        if self.current_player == 1:
+            self.draw_player_o()
+
+        if self.current_player == 2:
+            self.draw_player_x()
+
+        self.draw_life()
+
+        self.draw_score()
 
     def reset_all_leds(self):
         '''Resets all the LEDs'''
@@ -159,124 +379,14 @@ class Game:
         self.turn_on_all()
         time.sleep(1)
         self.turn_off_all()
-        bullet = self.color_text('~', 'red', 'black')
         print('\n')
-        message = "    Welcome to Tic Tac Toe!    "
-
-        print(self.color_text(' ' + '~' *
-              (len(message) + 2) + ' ', 'white', 'dark blue'))
-        print(self.color_text('  ' + message + '  ', 'yellow', 'dark blue'))
-        print(self.color_text(' ' + '~' *
-              (len(message) + 2) + ' ', 'white', 'dark blue'))
-
-        print('\n' + self.color_text('📌 Instructions', 'green', 'black'))
-        print('\n' + bullet +
-              self.color_text(' Player 1 starts first', 'white', 'black'))
-        print(bullet + self.color_text(' Use the navigation button to navigate to the LED you want to select', 'white', 'black'))
-        print(bullet + self.color_text(
-            ' Use the select button to select the LED you want to select', 'white', 'black'))
-        print(bullet + self.color_text(' Player 1 is represented by a solid LED', 'white', 'black'))
-        print(bullet + self.color_text(' Player 2 is represented by a blinking LED', 'white', 'black'))
-        print(bullet + self.color_text(' The first player to get 3 LEDs in a row, column or diagonal wins', 'white', 'black'))
-        print(bullet + self.color_text(
-            ' If all the LEDs are selected and no one has won, it is a draw', 'white', 'black'))
-        print(bullet + self.color_text(' You will have {} chances to play and if you can stop the game at any time of the end of a match'.format(5), 'white', 'black'))
-        print('\n 😍 ' + self.color_text('Good luck!', 'yellow', 'black'))
-
-        if self.started:
-            print(self.color_text(
-                '\n >> Now the person 1 can start the game by pressing the navigation button!', 'white', 'black'))
-        else:
-            print(self.color_text(
-                '\n >> Press the navigation button to play in "human vs human mode" or press select button to play in "computer vs human mode"!', 'white', 'black'))
-
-    def print_score_board(self):
-        print('\n' + self.color_text('-') * 22)
-        # print it is human vs human or human vs computer
-        if self.computer_vs_human_mode:
-            print(self.color_text('Game Mode: {}'.format(self.color_text(
-                " Computer vs Human ", 'white', 'dark red')), 'blue', 'black'))
-        else:
-            print(self.color_text('Game Mode: {}'.format(self.color_text(
-                " Human vs Human ", 'white', 'dark red')), 'blue', 'black'))
-
-        if self.computer_move:
-            print(self.color_text('Current player: {}'.format(self.color_text(
-                " " + 'Computer' + " ", 'white', 'dark red')), 'blue', 'black'))
-        else:
-            print(self.color_text('Current player: {}'.format(self.color_text(
-                " " + str(self.current_player) + " ", 'white', 'dark red')), 'blue', 'black'))
-        if self.remaining_chances == 0:
-            print(self.color_text('Remaining chances: {}'.format(self.color_text(
-                " " + '0' + " ", 'white', 'dark red')), 'blue', 'black'))
-        else:
-            print(self.color_text('Remaining lives: {}'.format(self.color_text(
-                " " + ("🤍")*self.remaining_chances + " ", 'white', 'dark red')), 'blue', 'black'))
-        print(self.color_text('-') * 22)
-        print(self.color_text('Score:', 'white', 'black'))
-        print(self.color_text('Player 1 Score: {}'.format(self.color_text(
-            " " + str(self.score[1]) + " ", 'white', 'dark red')), 'blue', 'black'))
-        print(self.color_text('Player 2 Score: {}'.format(self.color_text(
-            " " + str(self.score[2]) + " ", 'white', 'dark red')), 'blue', 'black'))
-        print(self.color_text('-') * 22)
-        if self.computer_vs_human_mode and self.computer_move:
-            print('\n' + self.color_text('😎 Computer is thinking...', 'yellow', 'black'))
-
-    def print_game_board(self):
-        # Define the characters for the lines and boxes
-        horizontal_line = self.color_text("-", 'white', 'dark green')
-        vertical_line = self.color_text("|", 'white', 'dark green')
-        corner = self.color_text("+", 'white', 'dark green')
-        space = self.color_text(" ", 'white', 'dark green')
-        circle = self.color_text("O", 'white', 'dark green')
-        cross = self.color_text("X", 'white', 'dark green')
-        red_circle = self.color_text("O", 'red', 'dark green')
-        red_cross = self.color_text("X", 'red', 'dark green')
-        value = []
-
-        i = 0
-        for led in self.leds:
-            if led.selected == 1 and led.matched:
-                value.append(red_circle)
-            elif led.selected == 1 and not led.matched:
-                value.append(circle)
-            elif led.selected == 2 and led.matched:
-                value.append(red_cross)
-            elif led.selected == 2 and not led.matched:
-                value.append(cross)
-            elif led.selected == 0 and self.navigation_button_position == i + 1:
-                if self.current_player == 1:
-                    value.append(self.color_text("O", 'yellow', 'dark green'))
-                else:
-                    value.append(self.color_text("X", 'yellow', 'dark green'))
-            else:
-                value.append(space)
-
-            i += 1
-
-        print('\n')
-        # Print the grid
-        print(space + corner + horizontal_line * 3 + corner +
-              horizontal_line * 3 + corner + horizontal_line * 3 + corner + space)
-        print(space + vertical_line + space + value[0] + space + vertical_line +
-              space + value[1] + space + vertical_line + space + value[2] + space + vertical_line + space)
-        print(space + corner + horizontal_line * 3 + corner +
-              horizontal_line * 3 + corner + horizontal_line * 3 + corner + space)
-        print(space + vertical_line + space + value[3] + space + vertical_line +
-              space + value[4] + space + vertical_line + space + value[5] + space + vertical_line + space)
-        print(space + corner + horizontal_line * 3 + corner +
-              horizontal_line * 3 + corner + horizontal_line * 3 + corner + space)
-        print(space + vertical_line + space + value[6] + space + vertical_line +
-              space + value[7] + space + vertical_line + space + value[8] + space + vertical_line + space)
-        print(space + corner + horizontal_line * 3 + corner +
-              horizontal_line * 3 + corner + horizontal_line * 3 + corner + space)
+        print('Welocme to the game')
 
     def start_game(self):
-        '''Starts the game'''
+        '''Starts the self'''
         self.started = True
         self.welcome()
-        self.print_score_board()
-        self.print_game_board()
+        self.refresh_game_board()
 
     def do_all_leds_selected(self):
         '''Returns True if all the LEDs are selected'''
@@ -325,9 +435,7 @@ class Game:
 
     def do_computer_move(self):
         '''Computer move for easy level it set the random position for navigation button'''
-        print('Computer move')
         game_board = [led.selected for led in self.leds]
-        print(game_board)
         symbol = 2
 
         if self.do_all_leds_selected():
@@ -336,7 +444,7 @@ class Game:
         # Define a list of possible moves (i.e., indices of the board where the value is 0)
         possible_moves = [i for i, val in enumerate(game_board) if val == 0]
 
-        # Check if there is an opportunity to win the game
+        # Check if there is an opportunity to win the self
         for move in possible_moves:
             test_board = game_board.copy()
             test_board[move] = symbol
@@ -396,82 +504,41 @@ class Game:
                 self.enable_computer_move()
                 self.computer_move_start_time = time.time()
 
-        os.system('cls')
-        self.print_score_board()
-        self.print_game_board()
-
     def check_for_win(self):
         '''Checks if the current player has won'''
         # Check for rows
         for i in range(0, len(self.leds), 3):
             if self.leds[i].selected == self.leds[i + 1].selected == self.leds[i + 2].selected != 0:
-                self.leds[i].matched = True
-                self.leds[i + 1].matched = True
-                self.leds[i + 2].matched = True
                 return True
         # Check for columns
         for i in range(0, 3):
             if self.leds[i].selected == self.leds[i + 3].selected == self.leds[i + 6].selected != 0:
-                self.leds[i].matched = True
-                self.leds[i + 3].matched = True
-                self.leds[i + 6].matched = True
                 return True
         # Check for diagonals
         if self.leds[0].selected == self.leds[4].selected == self.leds[8].selected != 0:
-            self.leds[0].matched = True
-            self.leds[4].matched = True
-            self.leds[8].matched = True
             return True
         if self.leds[2].selected == self.leds[4].selected == self.leds[6].selected != 0:
-            self.leds[2].matched = True
-            self.leds[4].matched = True
-            self.leds[6].matched = True
             return True
         return False
 
     def check_for_draw(self):
-        '''Checks if the game is a draw'''
+        '''Checks if the self is a draw'''
         if self.do_all_leds_selected():
             return True
         return False
 
-    def announce_win(self):
-        '''Announces the winner'''
+    def handle_win(self):
+        '''Handles the win'''
         self.score[self.current_player] += 100
         self.finished = True
         self.remaining_chances -= 1
-        os.system('cls')
-        self.print_score_board()
-        self.print_game_board()
-        print('\nPlayer {} wins!'.format(self.current_player))
-        print(
-            '\nTo play again, press the navigation button. To exit, press the select button.')
 
-    def announce_draw(self):
+    def handle_draw(self):
+        '''Handles the draw'''
         self.score[1] += 50
         self.score[2] += 50
         self.finished = True
         self.remaining_chances -= 1
-        os.system('cls')
-        self.print_score_board()
-        self.print_game_board()
-        print('\nDraw!')
-        print(
-            '\nTo play again, press the navigation button. To exit, press the select button.')
-
-    def announce_final_winner(self):
-        '''Announces the winner'''
-        os.system('cls')
-        self.print_score_board()
-        self.print_game_board()
-        print('\nGame Over!')
-        print('\n')
-        if self.score[1] > self.score[2]:
-            print('Player 1 wins!')
-        elif self.score[1] < self.score[2]:
-            print('Player 2 wins!')
-        else:
-            print('It is a draw!')
 
     def play_next_chance(self):
         '''Plays the next chance'''
@@ -480,13 +547,9 @@ class Game:
         self.navigation_button_position = 0
         self.switch_players()
         self.player_played_first = self.current_player
-        os.system('cls')
-        print('\nPlaying the next chance!')
-        self.print_score_board()
-        self.print_game_board()
 
     def reset_game(self):
-        '''Resets the game'''
+        '''Resets the self'''
         self.reset_all_leds()
         self.finished = False
         self.navigation_button_position = 0
@@ -501,36 +564,60 @@ class Game:
         self.can_start_again = True
         self.can_get_input = True
 
-    def handle_selection(self):
-        '''Handles the selection of the navigation button'''
+    def handle_navigation(self):
+        '''Handles the navigation button'''
         try:
-            self.select()
-            self.navigation_button_position = 0
-
-            if self.check_for_win():
-                self.announce_win()
-            elif self.check_for_draw():
-                self.announce_draw()
-
-            if not self.finished:
-                self.switch_players()
-
-            if self.remaining_chances == 0:
-                print('\nNo more chances left.')
-                self.announce_final_winner()
-                self.reset_game()
+            self.navigate()
 
         except Exception as e:
             print('\n')
             print(e)
 
-    def handle_navigation(self):
-        '''Handles the navigation button'''
+    def handle_selection(self):
+        '''Handles the selection of the navigation button'''
         try:
-            self.navigate()
-            os.system('cls')
-            self.print_score_board()
-            self.print_game_board()
+            self.can_get_input = False
+            self.select()
+            self.navigation_button_position = 0
+            self.update_game_board()
+
+            self.can_get_input = True
+
+            if self.check_for_win():
+                self.handle_win()
+                if self.current_player == 1:
+                    self.show_player_o_won()
+                elif self.current_player == 2:
+                    self.show_player_x_won()
+
+            elif self.check_for_draw():
+                self.handle_draw()
+                self.show_game_is_tie()
+
+            if not self.finished:
+                self.switch_players()
+
+                if self.current_player == 1:
+                    self.draw_player_o()
+
+                if self.current_player == 2:
+                    self.draw_player_x()
+
+                self.draw_life()
+
+            if self.computer_move:
+                self.show_computer_is_thinking()
+
+            if self.remaining_chances == 0:
+                print('\nNo more chances left.')
+                if self.score[1] > self.score[2]:
+                    self.show_champion_player_o_window()
+                elif self.score[1] < self.score[2]:
+                    self.show_champion_player_x_window()
+                else:
+                    self.show_match_is_draw_window()
+                self.reset_game()
+
         except Exception as e:
             print('\n')
             print(e)
@@ -538,10 +625,7 @@ class Game:
     def handle_exit(self):
         '''Handles the exit button'''
         try:
-            # Reset the game
-            print('\nYou have chosen to reset the game.')
-            self.announce_final_winner()
-            print('\nResetting the game in 3 seconds...')
+            # Reset the self
             self.reset_game()
             self.welcome()
         except Exception as e:
@@ -551,7 +635,6 @@ class Game:
     def handle_play_next_chance(self):
         '''Handles the play next chance button'''
         try:
-            print('\nYou have chosen to play the next chance.')
             self.play_next_chance()
         except Exception as e:
             print('\n')
@@ -561,6 +644,15 @@ class Game:
         '''Handles the computer move'''
         self.do_computer_move()
         self.handle_selection()
+
+    def handle_start_again(self):
+        '''Handles the start again button'''
+        self.can_get_input = False
+        self.welcome()
+        self.show_loading_window()
+        self.show_choose_mode_window()
+        self.can_get_input = True
+        self.can_start_again = False
 
 # Functions
 
