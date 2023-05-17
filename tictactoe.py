@@ -94,7 +94,7 @@ class Game:
             raise TypeError('leds must be a list of Led objects')
 
         self.leds = leds
-        self.chances = 3
+        self.chances = 1
         self.started = False
         self.finished = False
         self.navigation_button_position = 0
@@ -211,6 +211,17 @@ class Game:
             "assets/sounds/announce_champion.wav")
         self.click_button_sound = pg.mixer.Sound(
             "assets/sounds/click_button.wav")
+
+        # Load the music
+        self.intro_music = pg.mixer.music.load(
+            "assets/sounds/intro.wav")
+
+        # Play the music
+        pg.mixer.music.play(-1)
+
+    def stop_music(self):
+        '''Stops the music'''
+        pg.mixer.music.stop()
 
     def show_computer_is_thinking(self):
         '''Shows the computer is thinking message'''
@@ -713,6 +724,8 @@ class Game:
         '''Handles the start again button'''
         self.can_get_input = False
         self.welcome()
+        # Play the music
+        pg.mixer.music.play(-1)
         self.show_loading_window()
         self.show_choose_mode_window()
         self.can_get_input = True

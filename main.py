@@ -96,10 +96,12 @@ def play_tic_tac_toe():
         # If the game is not started, then
         if human_vs_human and last_nav_button_state != nav_button_state:
             ttt_game.play_button_click_sound()
+            ttt_game.stop_music()
             ttt_game.start_game()
 
         if computer_vs_human:
             ttt_game.play_button_click_sound()
+            ttt_game.stop_music()
             ttt_game.enable_computer_vs_human_mode()
             ttt_game.start_game()
 
