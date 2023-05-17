@@ -111,6 +111,7 @@ class Game:
         self.can_get_input = False
         self.can_start_again = False
         self.can_skip_instruction = False
+        self.notification_in_screen = False
 
         self.SCREEN_WIDTH = 1200
         self.SCREEN_HEIGHT = 800
@@ -159,6 +160,8 @@ class Game:
             "assets/images/cell_selected.png")
         self.cell_not_selected_bg = pg.image.load(
             "assets/images/cell_not_selected.png")
+        self.select_position = pg.image.load(
+            "assets/images/select_position.png")
         self.thankyou_window = pg.image.load("assets/images/thankyou.png")
         self.player_o_won = pg.image.load("assets/images/player_o_won.png")
         self.player_x_won = pg.image.load("assets/images/player_x_won.png")
@@ -194,6 +197,8 @@ class Game:
             self.cell_selected_bg, (164, 164))
         self.cell_not_selected_bg = pg.transform.scale(
             self.cell_not_selected_bg, (164, 164))
+        self.select_position = pg.transform.scale(
+            self.select_position, (561, 121))
         self.player_o_won = pg.transform.scale(self.player_o_won, (764, 548))
         self.player_x_won = pg.transform.scale(self.player_x_won, (764, 548))
         self.game_is_tie = pg.transform.scale(self.game_is_tie, (764, 548))
@@ -213,6 +218,7 @@ class Game:
             "assets/sounds/announce_champion.wav")
         self.click_button_sound = pg.mixer.Sound(
             "assets/sounds/click_button.wav")
+        self.alert_sound = pg.mixer.Sound("assets/sounds/alert.wav")
 
         # Load the music
         self.intro_music = pg.mixer.music.load(
@@ -228,10 +234,17 @@ class Game:
     def show_computer_is_thinking(self):
         '''Shows the computer is thinking message'''
         self.screen.blit(self.computer_is_thinking, (65, 660))
+        self.notification_in_screen = True
         pg.display.update()
 
-    def clear_computer_is_thinking(self):
-        '''Clears the computer is thinking message'''
+    def show_select_position(self):
+        '''Shows the select position message'''
+        self.screen.blit(self.select_position, (65, 660))
+        self.notification_in_screen = True
+        pg.display.update()
+
+    def clear_notification(self):
+        '''Clears the notification'''
         self.screen.blit(self.computer_is_thinking_bg, (65, 660))
         pg.display.update()
 
@@ -445,7 +458,7 @@ class Game:
     def navigate(self):
         '''Navigates the LEDS using the navigation button'''
         if self.do_all_leds_selected():
-            raise Exception('All LEDs are selected')
+            return
 
         self.navigation_button_last_position = self.navigation_button_position
 
@@ -793,10 +806,9 @@ class Game:
     def select(self):
         '''Selects the LED using the select button'''
         if self.navigation_button_position == 0:
-            raise Exception(
-                'Please select a position using the navigation button')
+            return
         elif self.leds[self.navigation_button_position - 1].selected != 0:
-            raise Exception('This position is already selected')
+            return
 
         if self.current_player == 1:
             self.leds[self.navigation_button_position - 1].turn_on()
@@ -879,6 +891,9 @@ class Game:
     def handle_navigation(self):
         '''Handles the navigation button'''
         try:
+            if self.notification_in_screen:
+                self.clear_notification()
+
             self.navigate()
 
             if self.navigation_button_last_position != 0:
@@ -895,6 +910,10 @@ class Game:
 
     def handle_selection(self):
         '''Handles the selection of the navigation button'''
+        if self.navigation_button_position == 0:
+            self.show_select_position()
+            pg.mixer.Sound.play(self.alert_sound)
+            return
         try:
             self.can_get_input = False
             self.select()
@@ -904,8 +923,8 @@ class Game:
 
             self.can_get_input = True
 
-            if self.computer_vs_human_mode:
-                self.clear_computer_is_thinking()
+            if self.notification_in_screen:
+                self.clear_notification()
 
             if self.check_for_win():
                 self.handle_win()
