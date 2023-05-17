@@ -634,6 +634,9 @@ class Game:
 
             self.can_get_input = True
 
+            if self.computer_vs_human_mode:
+                self.clear_computer_is_thinking()
+
             if self.check_for_win():
                 self.handle_win()
                 if self.current_player == 1:

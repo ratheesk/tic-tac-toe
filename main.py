@@ -108,7 +108,6 @@ def play_tic_tac_toe():
             ttt_game.play_button_click_sound()
             ttt_game.do_computer_move()
             ttt_game.handle_selection()
-            ttt_game.clear_computer_is_thinking()
 
         # If the navigation button state and select button state have changed at same time, then
         if nav_button_pressed and select_button_pressed:
