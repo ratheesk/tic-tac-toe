@@ -94,7 +94,7 @@ class Game:
             raise TypeError('leds must be a list of Led objects')
 
         self.leds = leds
-        self.chances = 1
+        self.chances = 3
         self.started = False
         self.finished = False
         self.navigation_button_position = 0
@@ -489,10 +489,11 @@ class Game:
             raise Exception('All LEDs are selected')
 
         # Define a list of possible moves
-        possible_moves = [i for i, val in enumerate(game_board) if val == 0]
+        all_possible_moves = [
+            i for i, val in enumerate(game_board) if val == 0]
 
         # Check if there is an opportunity to win the self
-        for move in possible_moves:
+        for move in all_possible_moves:
             test_board = game_board.copy()
             test_board[move] = symbol
             for i in range(3):
@@ -511,7 +512,7 @@ class Game:
 
         # Check if the opponent has an opportunity to win
         opponent_symbol = 1 if symbol == 2 else 2
-        for move in possible_moves:
+        for move in all_possible_moves:
             test_board = game_board.copy()
             test_board[move] = opponent_symbol
             for i in range(3):
@@ -528,8 +529,264 @@ class Game:
                 self.navigation_button_position = move + 1
                 return
 
+        def add_available_positions(list1, list2):
+            for i in list2:
+                if i not in list1:
+                    list1.append(i)
+            return list1
+
+            # Check if a empty cell is available near to already selected cell by the computer
+        if symbol in game_board:
+            positions = [i for i, val in enumerate(
+                game_board) if val == symbol]
+            possible_moves = []
+            for position in positions:
+                if position == 0:
+                    can_1 = True if (
+                        game_board[1] == 0 and game_board[2] == 0) else False
+                    can_3 = True if (
+                        game_board[3] == 0 and game_board[6] == 0) else False
+                    can_4 = True if (
+                        game_board[4] == 0 and game_board[8] == 0) else False
+
+                    if can_1 and can_3 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 3, 4, 2, 6, 8])
+                    elif can_1 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 3, 2, 6])
+                    elif can_1 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 4, 2, 8])
+                    elif can_3 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [3, 4, 6, 8])
+                    elif can_1:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 2])
+                    elif can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [3, 6])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [4, 8])
+
+                elif position == 1:
+                    can_0 = True if (
+                        game_board[0] == 0 and game_board[2] == 0) else False
+                    can_4 = True if (
+                        game_board[0] == 0 and game_board[8] == 0) else False
+
+                    if can_0 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 4, 2, 8])
+                    elif can_0:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 2])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [4, 8])
+
+                elif position == 2:
+                    can_1 = True if (
+                        game_board[0] == 0 and game_board[1] == 0) else False
+                    can_5 = True if (
+                        game_board[5] == 0 and game_board[8] == 0) else False
+                    can_4 = True if (
+                        game_board[4] == 0 and game_board[6] == 0) else False
+
+                    if can_1 and can_5 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 5, 4, 0, 8, 6])
+                    elif can_1 and can_5:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 5, 0, 8])
+                    elif can_1 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 4, 0, 6])
+                    elif can_5 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [5, 4, 8, 6])
+                    elif can_1:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 0])
+                    elif can_5:
+                        possible_moves = add_available_positions(
+                            possible_moves, [5, 8])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [4, 6])
+
+                elif position == 3:
+                    can_0 = True if (
+                        game_board[0] == 0 and game_board[6] == 0) else False
+                    can_4 = True if (
+                        game_board[4] == 0 and game_board[5] == 0) else False
+
+                    if can_0 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 4, 6, 5])
+                    elif can_0:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 6])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [4, 5])
+
+                elif position == 4:
+                    can_0 = True if (
+                        game_board[0] == 0 and game_board[8] == 0) else False
+                    can_1 = True if (
+                        game_board[1] == 0 and game_board[7] == 0) else False
+                    can_2 = True if (
+                        game_board[2] == 0 and game_board[6] == 0) else False
+                    can_3 = True if (
+                        game_board[3] == 0 and game_board[5] == 0) else False
+
+                    if can_0 and can_1 and can_2 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 1, 2, 3, 5, 6, 7, 8])
+                    elif can_0 and can_1 and can_2:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 1, 2, 6, 7, 8])
+                    elif can_0 and can_1 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 1, 3, 5, 7, 8])
+                    elif can_0 and can_2 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 2, 3, 5, 6, 8])
+                    elif can_1 and can_2 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 2, 3, 5, 6, 7])
+                    elif can_0 and can_1:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 1, 7, 8])
+                    elif can_0 and can_2:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 2, 6, 8])
+                    elif can_0 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 3, 5, 8])
+                    elif can_1 and can_2:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 2, 6, 7])
+                    elif can_1 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 3, 5, 7])
+                    elif can_2 and can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 3, 5, 6])
+                    elif can_0:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 8])
+                    elif can_1:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 7])
+                    elif can_2:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 6])
+                    elif can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [3, 5])
+
+                elif position == 5:
+                    can_2 = True if (
+                        game_board[2] == 0 and game_board[8] == 0) else False
+                    can_4 = True if (
+                        game_board[3] == 0 and game_board[4] == 0) else False
+
+                    if can_2 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 3, 4, 8])
+                    elif can_2:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 8])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [3, 4])
+
+                elif position == 6:
+                    can_3 = True if (
+                        game_board[0] == 0 and game_board[3] == 0) else False
+                    can_7 = True if (
+                        game_board[7] == 0 and game_board[8] == 0) else False
+                    can_4 = True if (
+                        game_board[2] == 0 and game_board[4] == 0) else False
+
+                    if can_3 and can_7 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 2, 3, 4, 7, 8])
+                    elif can_3 and can_7:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 3, 7, 8])
+                    elif can_3 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 2, 3, 4])
+                    elif can_7 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 4, 7, 8])
+                    elif can_3:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 3])
+                    elif can_7:
+                        possible_moves = add_available_positions(
+                            possible_moves, [7, 8])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 4])
+
+                elif position == 7:
+                    can_6 = True if (
+                        game_board[6] == 0 and game_board[8] == 0) else False
+                    can_4 = True if (
+                        game_board[1] == 0 and game_board[4] == 0) else False
+
+                    if can_6 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 4, 6, 8])
+                    elif can_6:
+                        possible_moves = add_available_positions(
+                            possible_moves, [6, 8])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [1, 4])
+
+                elif position == 8:
+                    can_7 = True if (
+                        game_board[6] == 0 and game_board[7] == 0) else False
+                    can_5 = True if (
+                        game_board[2] == 0 and game_board[5] == 0) else False
+                    can_4 = True if (
+                        game_board[0] == 0 and game_board[4] == 0) else False
+
+                    if can_7 and can_5 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 2, 4, 5, 6, 7])
+                    elif can_7 and can_5:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 5, 6, 7])
+                    elif can_7 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 4, 6, 7])
+                    elif can_5 and can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 2, 4, 5])
+                    elif can_7:
+                        possible_moves = add_available_positions(
+                            possible_moves, [6, 7])
+                    elif can_5:
+                        possible_moves = add_available_positions(
+                            possible_moves, [2, 5])
+                    elif can_4:
+                        possible_moves = add_available_positions(
+                            possible_moves, [0, 4])
+            if len(possible_moves) != 0:
+                self.navigation_button_position = random.choice(
+                    possible_moves) + 1
+                return
+
         # If there is no opportunity to win or block the opponent's winning move, sdo a random move
-        self.navigation_button_position = random.choice(possible_moves) + 1
+        self.navigation_button_position = random.choice(all_possible_moves) + 1
 
     def select(self):
         '''Selects the LED using the select button'''
