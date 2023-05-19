@@ -112,6 +112,7 @@ class Game:
         self.can_start_again = False
         self.can_skip_instruction = False
         self.notification_in_screen = False
+        self.can_use_select_button = False
 
         self.SCREEN_WIDTH = 1200
         self.SCREEN_HEIGHT = 800
@@ -1032,7 +1033,7 @@ def blink_all(leds, delay=0.1):
             led.last_time_blinked = current_time
 
 
-def play_tic_tac_toe(NAV_BUTTON_PIN, SELECT_BUTTON_PIN, LED_PINS,  board):
+def play_tic_tac_toe(NAV_BUTTON_PIN, SELECT_BUTTON_PIN, BACK_BUTTON_PIN, LED_PINS,  board):
     '''Plays the tic tac toe game
     NAV_BUTTON_PIN: the pin number of the navigation button
     SELECT_BUTTON_PIN: the pin number of the select button
@@ -1055,6 +1056,7 @@ def play_tic_tac_toe(NAV_BUTTON_PIN, SELECT_BUTTON_PIN, LED_PINS,  board):
     # variables
     last_nav_button_state = False
     last_select_button_state = False
+    last_back_button_state = False
 
     try:
         # Create a list of LED objects
@@ -1066,10 +1068,12 @@ def play_tic_tac_toe(NAV_BUTTON_PIN, SELECT_BUTTON_PIN, LED_PINS,  board):
     # Set navigate button pin mode to INPUT_PULLUP
     NAV_BUTTON = board.get_pin('d:{}:i'.format(NAV_BUTTON_PIN))
     SELECT_BUTTON = board.get_pin('d:{}:i'.format(SELECT_BUTTON_PIN))
+    BACK_BUTTON = board.get_pin('d:{}:i'.format(BACK_BUTTON_PIN))
 
     # Enable reporting for the buttons
     NAV_BUTTON.enable_reporting()
     SELECT_BUTTON.enable_reporting()
+    BACK_BUTTON.enable_reporting()
     try:
         # Create the Game object
         ttt_game = Game(leds)
@@ -1098,9 +1102,11 @@ def play_tic_tac_toe(NAV_BUTTON_PIN, SELECT_BUTTON_PIN, LED_PINS,  board):
         # Read the buttons' states
         nav_button_state = NAV_BUTTON.read()
         select_button_state = SELECT_BUTTON.read()
+        back_button_state = BACK_BUTTON.read()
 
         nav_button_pressed = ttt_game.can_get_input and nav_button_state and last_nav_button_state != nav_button_state
-        select_button_pressed = ttt_game.can_get_input and select_button_state and last_select_button_state != select_button_state
+        select_button_pressed = ttt_game.can_get_input and select_button_state and last_select_button_state != select_button_state and ttt_game.can_use_select_button
+        back_button_pressed = ttt_game.can_get_input and back_button_state and last_back_button_state != back_button_state
 
         can_skip_instruction = nav_button_pressed and not ttt_game.started and ttt_game.can_skip_instruction
         can_start_again = nav_button_pressed and ttt_game.can_start_again
@@ -1112,10 +1118,15 @@ def play_tic_tac_toe(NAV_BUTTON_PIN, SELECT_BUTTON_PIN, LED_PINS,  board):
             (current_time - ttt_game.computer_move_start_time) > random_computer_thinking_time)
         human_vs_human = nav_button_pressed and not ttt_game.started
         computer_vs_human = select_button_pressed and not ttt_game.started
+        can_go_back = back_button_pressed and ttt_game.started and not ttt_game.finished
+
+        if back_button_pressed:
+            ttt_game.play_button_click_sound()
 
         if can_skip_instruction:
             ttt_game.play_button_click_sound()
             ttt_game.show_choose_mode_window()
+            ttt_game.can_use_select_button = True
             ttt_game.can_skip_instruction = False
 
             last_nav_button_state = nav_button_state
@@ -1168,6 +1179,7 @@ def play_tic_tac_toe(NAV_BUTTON_PIN, SELECT_BUTTON_PIN, LED_PINS,  board):
         # Update the last button states
         last_nav_button_state = nav_button_state
         last_select_button_state = select_button_state
+        last_back_button_state = back_button_state
 
         # Blink all the LEDs which are enabled to blink
         blink_all(leds)
